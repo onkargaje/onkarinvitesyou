@@ -46,6 +46,6 @@ export const events = [
 export const gallerySections = [
   { key: "our-beginning", title: "Our Beginning", kind: "single", photoCount: 1 },
   { key: "happily-engaged", title: "Happily Engaged", kind: "slider", photoCount: 2 },
-  { key: "two-souls", title: "Two Souls, One Story", kind: "album", photoCount: 4 },
-  { key: "a-little-laughter", title: "A Little Laughter", kind: "album", photoCount: 4 },
+  { key: "two-souls", title: "Two Souls, One Story", kind: "album", photoCount: 10 },
+  { key: "a-little-laughter", title: "A Little Laughter", kind: "album", photoCount: 5 },
 ] as const;
