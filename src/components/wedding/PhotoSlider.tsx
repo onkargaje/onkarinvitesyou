@@ -51,7 +51,7 @@ export const PhotoSlider = ({
   const frame = (
     <div className="polaroid mx-auto max-w-lg md:max-w-xl" style={{ transform: `rotate(${rotate}deg)` }}>
       <div className={`relative overflow-hidden rounded-sm bg-cream ${aspect} ${effect === "fade" ? "embla-fade" : ""}`} ref={emblaRef}>
-        <div className="embla__container">
+        <div className="embla__container relative h-full w-full">
           {images.map((item, index) => {
             const photoId = typeof item === "string" ? item : item.id;
             const src = typeof item === "string" ? undefined : item.src;
@@ -60,14 +60,15 @@ export const PhotoSlider = ({
             return (
               <div
                 key={photoId}
-                className={`embla__slide relative h-full flex-[0_0_100%] ${effect === "fade" ? `absolute inset-0 ${index === selected ? "z-10 opacity-100" : "z-0 opacity-0"}` : ""}`}
+                className={`embla__slide relative h-full w-full flex-[0_0_100%] ${effect === "fade" ? `absolute inset-0 ${index === selected ? "z-10 opacity-100" : "z-0 opacity-0"}` : ""}`}
               >
                 <div className={`h-full w-full ${bright && index === selected ? "brightness-105 saturate-105" : ""}`}>
                   {src ? (
                     <img
                       src={src}
                       alt={alt || `${title} — ${index + 1}`}
-                      loading="lazy"
+                      loading="eager"
+                      decoding="async"
                       className="h-full w-full object-cover object-[center_20%]"
                     />
                   ) : (

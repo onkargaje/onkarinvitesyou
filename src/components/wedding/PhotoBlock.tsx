@@ -21,7 +21,8 @@ export const PhotoBlock = ({
             <img
               src={image}
               alt={title}
-              loading="lazy"
+              loading="eager"
+              decoding="async"
               className={`w-full rounded-sm object-cover object-[center_20%] ${aspect}`}
             />
           ) : (
