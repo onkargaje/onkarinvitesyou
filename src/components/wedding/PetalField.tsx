@@ -6,7 +6,6 @@ interface Petal {
   delay: number;
   duration: number;
   size: number;
-  blur: number;
   opacity: number;
   drift: number;
   rotation: number;
@@ -45,14 +44,14 @@ const Field = ({ count, layer }: { count: number; layer: "bg" | "fg" }) => {
   const petals = useMemo<Petal[]>(() => Array.from({ length: count }, (_, i) => {
     const seed = i + (isBg ? 100 : 0);
     const tones = ["rose", "gold", "blush"] as const;
+    const duration = isBg ? 22 + sample(seed + 3) * 15 : 10 + sample(seed + 3) * 12;
     return {
       id: `${layer}-${i}`,
       left: sample(seed + 1) * 100,
-      delay: sample(seed + 2) * 14,
-      duration: isBg ? 22 + sample(seed + 3) * 15 : 10 + sample(seed + 3) * 12,
+      delay: -(sample(seed + 2) * duration),
+      duration,
       size: isBg ? 26 + sample(seed + 4) * 30 : 10 + sample(seed + 4) * 18,
-      blur: isBg ? 2 + sample(seed + 5) * 3 : sample(seed + 5) < 0.25 ? sample(seed + 6) * 1.2 : 0,
-      opacity: isBg ? 0.2 + sample(seed + 6) * 0.2 : 0.55 + sample(seed + 6) * 0.3,
+      opacity: isBg ? 0.18 + sample(seed + 6) * 0.18 : 0.55 + sample(seed + 6) * 0.3,
       drift: (sample(seed + 7) < 0.5 ? -1 : 1) * (40 + sample(seed + 8) * 140),
       rotation: 360 + sample(seed + 9) * 540,
       tone: tones[Math.floor(sample(seed + 10) * tones.length)] ?? "rose",
@@ -62,14 +61,17 @@ const Field = ({ count, layer }: { count: number; layer: "bg" | "fg" }) => {
   if (count === 0) return null;
 
   return (
-    <div aria-hidden="true" className={`pointer-events-none fixed inset-0 ${isBg ? "z-[1]" : "z-[60]"} overflow-hidden`}>
+    <div
+      aria-hidden="true"
+      className={`pointer-events-none fixed inset-0 select-none overflow-hidden ${isBg ? "z-[1]" : "z-[60]"}`}
+      style={{ contain: "strict" }}
+    >
       {petals.map((petal) => (
         <div
           key={petal.id}
           className="petal-fall absolute top-0"
           style={{
             left: `${petal.left}%`,
-            filter: petal.blur ? `blur(${petal.blur}px)` : undefined,
             animationDuration: `${petal.duration}s`,
             animationDelay: `${petal.delay}s`,
             opacity: petal.opacity,
