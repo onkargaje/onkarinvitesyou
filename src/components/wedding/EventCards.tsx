@@ -33,7 +33,7 @@ export const EventCards = () => {
                 type="button"
                 variant="ghost"
                 onClick={() => setActive(event)}
-                className="group relative mx-auto flex aspect-[3/4] h-auto w-full max-w-md flex-col items-center justify-start overflow-hidden rounded-3xl bg-cream bg-contain bg-center bg-no-repeat px-6 py-12 text-left shadow-lg transition-all duration-500 hover:-translate-y-2 hover:shadow-xl"
+                className="group relative mx-auto flex aspect-[3/4] h-auto w-full max-w-md flex-col items-center justify-start overflow-hidden rounded-3xl bg-cream bg-cover bg-center bg-no-repeat px-6 py-12 text-left shadow-lg transition-all duration-500 hover:-translate-y-2 hover:shadow-xl"
                 style={{ backgroundImage: `url(${themeBg[event.theme]})` }}
                 aria-label={`Open ${event.name} details`}
               >
@@ -46,7 +46,7 @@ export const EventCards = () => {
                       <Row icon={<Calendar className="h-4 w-4" />} value={event.date} />
                       <Row icon={<Clock className="h-4 w-4" />} value={event.time} />
                       <Row icon={<MapPin className="h-4 w-4" />} value={event.venue} />
-                      <Row icon={<Shirt className="h-4 w-4" />} value={event.dress} label="Optional suggestion" />
+                      <Row icon={<Shirt className="h-4 w-4" />} value={event.dress} />
                     </ul>
                   </div>
                 </div>
@@ -73,7 +73,7 @@ export const EventCards = () => {
               transition={{ duration: 0.35, ease: [0.22, 1, 0.36, 1] }}
               onClick={(event) => event.stopPropagation()}
               className="relative max-h-[90vh] w-full max-w-lg overflow-y-auto rounded-3xl bg-cream shadow-2xl"
-              style={{ backgroundImage: `url(${themeBg[active.theme]})`, backgroundSize: "contain", backgroundPosition: "center", backgroundRepeat: "no-repeat" }}
+              style={{ backgroundImage: `url(${themeBg[active.theme]})`, backgroundSize: "cover", backgroundPosition: "center", backgroundRepeat: "no-repeat" }}
             >
               <Button
                 type="button"
@@ -92,7 +92,7 @@ export const EventCards = () => {
                   <Row icon={<Calendar className="h-5 w-5" />} value={active.date} large />
                   <Row icon={<Clock className="h-5 w-5" />} value={active.time} large />
                   <Row icon={<MapPin className="h-5 w-5" />} value={active.venue} large />
-                  <Row icon={<Shirt className="h-5 w-5" />} value={active.dress} label="Optional suggestion" large />
+                  <Row icon={<Shirt className="h-5 w-5" />} value={active.dress} large />
                 </ul>
               </div>
             </motion.div>

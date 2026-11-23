@@ -18,18 +18,27 @@ const sample = (seed: number) => {
   return n - Math.floor(n);
 };
 
-const PetalShape = ({ petal }: { petal: Petal }) => (
-  <svg viewBox="0 0 32 32" width={petal.size} height={petal.size} aria-hidden="true" className={`petal-${petal.tone}`}>
-    <defs>
-      <linearGradient id={`petal-${petal.id}`} x1="0" x2="1" y1="0" y2="1">
-        <stop offset="0%" className="petal-stop-top" />
-        <stop offset="60%" className="petal-stop-mid" />
-        <stop offset="100%" className="petal-stop-bottom" />
-      </linearGradient>
-    </defs>
-    <path d="M16 2 C22 6 28 12 26 22 C24 28 18 30 16 30 C14 30 8 28 6 22 C4 12 10 6 16 2 Z" fill={`url(#petal-${petal.id})`} />
-  </svg>
-);
+const toneColors = {
+  rose: { top: "#f8d0d8", mid: "#e07a94", bottom: "#c44d6d" },
+  gold: { top: "#faecc8", mid: "#e4be73", bottom: "#b88a3a" },
+  blush: { top: "#fde8ec", mid: "#f0b4c0", bottom: "#d97d91" },
+} as const;
+
+const PetalShape = ({ petal }: { petal: Petal }) => {
+  const colors = toneColors[petal.tone];
+  return (
+    <svg viewBox="0 0 32 32" width={petal.size} height={petal.size} aria-hidden="true" className={`petal-${petal.tone}`}>
+      <defs>
+        <linearGradient id={`petal-${petal.id}`} x1="0" x2="1" y1="0" y2="1">
+          <stop offset="0%" stopColor={colors.top} />
+          <stop offset="60%" stopColor={colors.mid} />
+          <stop offset="100%" stopColor={colors.bottom} />
+        </linearGradient>
+      </defs>
+      <path d="M16 2 C22 6 28 12 26 22 C24 28 18 30 16 30 C14 30 8 28 6 22 C4 12 10 6 16 2 Z" fill={`url(#petal-${petal.id})`} />
+    </svg>
+  );
+};
 
 const Field = ({ count, layer }: { count: number; layer: "bg" | "fg" }) => {
   const isBg = layer === "bg";
@@ -53,7 +62,7 @@ const Field = ({ count, layer }: { count: number; layer: "bg" | "fg" }) => {
   if (count === 0) return null;
 
   return (
-    <div aria-hidden="true" className={`pointer-events-none fixed inset-0 z-[${isBg ? "1" : "60"}] overflow-hidden`}>
+    <div aria-hidden="true" className={`pointer-events-none fixed inset-0 ${isBg ? "z-[1]" : "z-[60]"} overflow-hidden`}>
       {petals.map((petal) => (
         <div
           key={petal.id}

@@ -8,7 +8,7 @@ export const Quote = () => (
         <p className="-mt-6 font-serif text-2xl italic leading-relaxed text-foreground md:text-4xl">
           We are tying the sacred bond of marriage
         </p>
-        <p className="mt-8 font-sans text-base font-medium uppercase tracking-[0.4em] text-rose/70">
+        <p className="font-shlok mt-8 text-lg font-medium tracking-wider text-rose/70 md:text-xl">
           ॥ वयं विवाहबन्धने बद्धौ ॥
         </p>
       </Reveal>

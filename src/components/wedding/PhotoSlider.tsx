@@ -6,8 +6,10 @@ import { Reveal } from "./Reveal";
 import { LikeButton } from "./LikeButton";
 import { PhotoPlaceholder } from "./PhotoPlaceholder";
 
+export type SliderImage = string | { id: string; src: string; alt?: string };
+
 interface PhotoSliderProps {
-  images: string[];
+  images: SliderImage[];
   title: string;
   text?: string;
   interval?: number;
@@ -50,19 +52,34 @@ export const PhotoSlider = ({
     <div className="polaroid mx-auto max-w-lg md:max-w-xl" style={{ transform: `rotate(${rotate}deg)` }}>
       <div className={`relative overflow-hidden rounded-sm bg-cream ${aspect} ${effect === "fade" ? "embla-fade" : ""}`} ref={emblaRef}>
         <div className="embla__container">
-          {images.map((photoId, index) => (
-            <div
-              key={photoId}
-              className={`embla__slide relative h-full flex-[0_0_100%] ${effect === "fade" ? `absolute inset-0 ${index === selected ? "z-10 opacity-100" : "z-0 opacity-0"}` : ""}`}
-            >
-              <div className={`h-full w-full ${bright && index === selected ? "brightness-105 saturate-105" : ""}`}>
-                <PhotoPlaceholder aspect="h-full" />
+          {images.map((item, index) => {
+            const photoId = typeof item === "string" ? item : item.id;
+            const src = typeof item === "string" ? undefined : item.src;
+            const alt = typeof item === "string" ? undefined : item.alt;
+
+            return (
+              <div
+                key={photoId}
+                className={`embla__slide relative h-full flex-[0_0_100%] ${effect === "fade" ? `absolute inset-0 ${index === selected ? "z-10 opacity-100" : "z-0 opacity-0"}` : ""}`}
+              >
+                <div className={`h-full w-full ${bright && index === selected ? "brightness-105 saturate-105" : ""}`}>
+                  {src ? (
+                    <img
+                      src={src}
+                      alt={alt || `${title} — ${index + 1}`}
+                      loading="lazy"
+                      className="h-full w-full object-cover object-[center_20%]"
+                    />
+                  ) : (
+                    <PhotoPlaceholder aspect="h-full" />
+                  )}
+                </div>
+                <div className="absolute right-3 top-3 z-20">
+                  <LikeButton kind="photo" itemId={`${likeIdPrefix}-${index + 1}`} variant="overlay" />
+                </div>
               </div>
-              <div className="absolute right-3 top-3 z-20">
-                <LikeButton kind="photo" itemId={`${likeIdPrefix}-${index + 1}`} variant="overlay" />
-              </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       </div>
 
