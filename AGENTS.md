@@ -28,3 +28,6 @@ use the editor.
   own key and store it in Secrets.
 - **Secrets.** Lovable manages them. Do not put secret values in the repo.
 <!-- LOVABLE:END -->
+
+## Application architecture
+- Keep this invitation as a single public TanStack Start home page with reusable wedding sections under `src/components/wedding` and wedding facts in `src/lib`; this preserves the reference's one-page guest flow without introducing another router.
