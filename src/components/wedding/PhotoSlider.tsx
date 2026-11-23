@@ -35,54 +35,99 @@ export const PhotoSlider = ({
   rotate = 0,
   likeIdPrefix,
 }: PhotoSliderProps) => {
-  const [emblaRef, emblaApi] = useEmblaCarousel({ loop: true, align: "center", dragFree: false }, [
-    Autoplay({ delay: interval, stopOnInteraction: false, stopOnMouseEnter: true }),
-  ]);
+  const isFade = effect === "fade";
+  const [emblaRef, emblaApi] = useEmblaCarousel(
+    { loop: true, align: "center", dragFree: false, active: !isFade },
+    isFade ? [] : [Autoplay({ delay: interval, stopOnInteraction: false, stopOnMouseEnter: true })],
+  );
   const [selected, setSelected] = useState(0);
+  const [paused, setPaused] = useState(false);
 
   useEffect(() => {
+    if (isFade) {
+      if (paused || images.length <= 1) return;
+      const id = window.setInterval(() => {
+        setSelected((prev) => (prev + 1) % images.length);
+      }, interval);
+      return () => window.clearInterval(id);
+    }
     if (!emblaApi) return;
     const onSelect = () => setSelected(emblaApi.selectedScrollSnap());
     emblaApi.on("select", onSelect);
     onSelect();
-    return () => emblaApi.off("select", onSelect);
-  }, [emblaApi]);
+    return () => {
+      emblaApi.off("select", onSelect);
+    };
+  }, [emblaApi, images.length, interval, isFade, paused]);
+
+  const renderSlideContent = (item: SliderImage, index: number) => {
+    const src = typeof item === "string" ? undefined : item.src;
+    const alt = typeof item === "string" ? undefined : item.alt;
+
+    return (
+      <>
+        <div
+          className={`flex h-full w-full items-center justify-center bg-cream ${
+            bright && index === selected ? "brightness-105 saturate-105" : ""
+          }`}
+        >
+          {src ? (
+            <img
+              src={src}
+              alt={alt || `${title} — ${index + 1}`}
+              loading="eager"
+              decoding="async"
+              className="max-h-full max-w-full object-contain"
+            />
+          ) : (
+            <PhotoPlaceholder aspect="h-full" />
+          )}
+        </div>
+        <div className="absolute right-3 top-3 z-20">
+          <LikeButton kind="photo" itemId={`${likeIdPrefix}-${index + 1}`} variant="overlay" />
+        </div>
+      </>
+    );
+  };
 
   const frame = (
-    <div className="polaroid mx-auto max-w-lg md:max-w-xl" style={{ transform: `rotate(${rotate}deg)` }}>
-      <div className={`relative overflow-hidden rounded-sm bg-cream ${aspect} ${effect === "fade" ? "embla-fade" : ""}`} ref={emblaRef}>
-        <div className="embla__container relative h-full w-full">
+    <div
+      className="polaroid mx-auto max-w-lg md:max-w-xl"
+      style={{ transform: `rotate(${rotate}deg)` }}
+      onMouseEnter={() => setPaused(true)}
+      onMouseLeave={() => setPaused(false)}
+    >
+      {isFade ? (
+        <div className={`relative overflow-hidden rounded-sm bg-cream ${aspect}`}>
           {images.map((item, index) => {
             const photoId = typeof item === "string" ? item : item.id;
-            const src = typeof item === "string" ? undefined : item.src;
-            const alt = typeof item === "string" ? undefined : item.alt;
-
+            const active = index === selected;
             return (
               <div
                 key={photoId}
-                className={`embla__slide relative h-full w-full flex-[0_0_100%] ${effect === "fade" ? `absolute inset-0 ${index === selected ? "z-10 opacity-100" : "z-0 opacity-0"}` : ""}`}
+                className={`absolute inset-0 h-full w-full transition-opacity duration-700 ease-out ${
+                  active ? "z-10 opacity-100" : "pointer-events-none z-0 opacity-0"
+                }`}
               >
-                <div className={`h-full w-full ${bright && index === selected ? "brightness-105 saturate-105" : ""}`}>
-                  {src ? (
-                    <img
-                      src={src}
-                      alt={alt || `${title} — ${index + 1}`}
-                      loading="eager"
-                      decoding="async"
-                      className="h-full w-full object-cover object-[center_20%]"
-                    />
-                  ) : (
-                    <PhotoPlaceholder aspect="h-full" />
-                  )}
-                </div>
-                <div className="absolute right-3 top-3 z-20">
-                  <LikeButton kind="photo" itemId={`${likeIdPrefix}-${index + 1}`} variant="overlay" />
-                </div>
+                {renderSlideContent(item, index)}
               </div>
             );
           })}
         </div>
-      </div>
+      ) : (
+        <div className={`relative overflow-hidden rounded-sm bg-cream ${aspect}`} ref={emblaRef}>
+          <div className="embla__container relative h-full w-full">
+            {images.map((item, index) => {
+              const photoId = typeof item === "string" ? item : item.id;
+              return (
+                <div key={photoId} className="embla__slide relative h-full w-full flex-[0_0_100%]">
+                  {renderSlideContent(item, index)}
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
 
       {showDots && (
         <div className="mt-3 flex justify-center gap-2">
@@ -93,8 +138,13 @@ export const PhotoSlider = ({
               variant="ghost"
               size="icon"
               aria-label={`Go to slide ${index + 1}`}
-              onClick={() => emblaApi?.scrollTo(index)}
-              className={`h-2 min-h-2 p-0 transition-all duration-300 ${index === selected ? "w-6 rounded-full bg-rose" : "w-2 rounded-full bg-rose/30"}`}
+              onClick={() => {
+                if (isFade) setSelected(index);
+                else emblaApi?.scrollTo(index);
+              }}
+              className={`h-2 min-h-2 p-0 transition-all duration-300 ${
+                index === selected ? "w-6 rounded-full bg-rose" : "w-2 rounded-full bg-rose/30"
+              }`}
             />
           ))}
         </div>
@@ -106,7 +156,11 @@ export const PhotoSlider = ({
     const reverse = variant === "right";
     return (
       <section className="px-6 py-12 md:py-20">
-        <div className={`container mx-auto grid max-w-5xl items-center gap-10 md:grid-cols-2 md:gap-16 ${reverse ? "md:[&>*:first-child]:order-2" : ""}`}>
+        <div
+          className={`container mx-auto grid max-w-5xl items-center gap-10 md:grid-cols-2 md:gap-16 ${
+            reverse ? "md:[&>*:first-child]:order-2" : ""
+          }`}
+        >
           <Reveal>{frame}</Reveal>
           <Reveal delay={0.15}>
             <div className={reverse ? "text-center md:text-right" : "text-center md:text-left"}>
