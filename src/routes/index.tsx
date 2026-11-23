@@ -126,7 +126,7 @@ function Index() {
           images={happilyEngagedImages}
           title={gallerySections[1].title}
           interval={6000}
-          effect="fade"
+          effect="slide"
           aspect="aspect-square"
           showDots
           likeIdPrefix="happily-engaged"
@@ -138,7 +138,7 @@ function Index() {
           text="From quiet conversations to whispered promises — every moment led us here. To this season, this love, this forever."
           rotate={-2}
           interval={7000}
-          effect="fade"
+          effect="slide"
           aspect="aspect-square"
           showDots
           likeIdPrefix="two-soul"
