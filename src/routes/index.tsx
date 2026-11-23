@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { createFileRoute } from "@tanstack/react-router";
 import { Blessings } from "@/components/wedding/Blessings";
 import { CinematicIntro } from "@/components/wedding/CinematicIntro";
@@ -60,6 +60,14 @@ const littleLaughterImages = [
   { id: "laughter-5", src: littleLaughter5, alt: "A Little Laughter — 5" },
 ];
 
+const allPreloadImages = [
+  ourBeginningImg,
+  ...happilyEngagedImages.map((img) => img.src),
+  ...twoSoulsImages.map((img) => img.src),
+  ...littleLaughterImages.map((img) => img.src),
+  foreverBeginsHereImg,
+];
+
 export const Route = createFileRoute("/")({
   head: () => ({
     meta: [
@@ -90,6 +98,18 @@ export const Route = createFileRoute("/")({
 
 function Index() {
   const [introDone, setIntroDone] = useState(false);
+
+  useEffect(() => {
+    const preloaded = allPreloadImages.map((src) => {
+      const img = new Image();
+      img.src = src;
+      img.decode?.().catch(() => {});
+      return img;
+    });
+    return () => {
+      preloaded.length = 0;
+    };
+  }, []);
 
   return (
     <main className="relative overflow-x-hidden">
@@ -142,7 +162,6 @@ function Index() {
           title="Forever begins here"
           photoId="forever-begins-here"
           image={foreverBeginsHereImg}
-          aspect="aspect-[3/2]"
         />
         <Blessings />
         <MapSection />
