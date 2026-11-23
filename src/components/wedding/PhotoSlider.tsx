@@ -1,6 +1,5 @@
-import { useEffect, useState } from "react";
-import useEmblaCarousel from "embla-carousel-react";
-import Autoplay from "embla-carousel-autoplay";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { ChevronLeft, ChevronRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Reveal } from "./Reveal";
 import { LikeButton } from "./LikeButton";
@@ -36,29 +35,44 @@ export const PhotoSlider = ({
   likeIdPrefix,
 }: PhotoSliderProps) => {
   const isFade = effect === "fade";
-  const [emblaRef, emblaApi] = useEmblaCarousel(
-    { loop: true, align: "center", dragFree: false, active: !isFade },
-    isFade ? [] : [Autoplay({ delay: interval, stopOnInteraction: false, stopOnMouseEnter: true })],
-  );
   const [selected, setSelected] = useState(0);
   const [paused, setPaused] = useState(false);
+  const touchStartX = useRef<number | null>(null);
+  const count = images.length;
+
+  const goNext = useCallback(() => {
+    if (count <= 1) return;
+    setSelected((prev) => (prev + 1) % count);
+  }, [count]);
+
+  const goPrev = useCallback(() => {
+    if (count <= 1) return;
+    setSelected((prev) => (prev - 1 + count) % count);
+  }, [count]);
 
   useEffect(() => {
-    if (isFade) {
-      if (paused || images.length <= 1) return;
-      const id = window.setInterval(() => {
-        setSelected((prev) => (prev + 1) % images.length);
-      }, interval);
-      return () => window.clearInterval(id);
+    if (paused || count <= 1) return;
+    const id = window.setInterval(goNext, interval);
+    return () => window.clearInterval(id);
+  }, [count, goNext, interval, paused]);
+
+  const handleTouchStart = (e: React.TouchEvent) => {
+    touchStartX.current = e.touches[0]?.clientX ?? null;
+    setPaused(true);
+  };
+
+  const handleTouchEnd = (e: React.TouchEvent) => {
+    const startX = touchStartX.current;
+    const endX = e.changedTouches[0]?.clientX;
+    touchStartX.current = null;
+    setPaused(false);
+    if (startX == null || endX == null) return;
+    const delta = startX - endX;
+    if (Math.abs(delta) > 35) {
+      if (delta > 0) goNext();
+      else goPrev();
     }
-    if (!emblaApi) return;
-    const onSelect = () => setSelected(emblaApi.selectedScrollSnap());
-    emblaApi.on("select", onSelect);
-    onSelect();
-    return () => {
-      emblaApi.off("select", onSelect);
-    };
-  }, [emblaApi, images.length, interval, isFade, paused]);
+  };
 
   const renderSlideContent = (item: SliderImage, index: number) => {
     const src = typeof item === "string" ? undefined : item.src;
@@ -77,7 +91,8 @@ export const PhotoSlider = ({
               alt={alt || `${title} — ${index + 1}`}
               loading="eager"
               decoding="async"
-              className="max-h-full max-w-full object-contain"
+              draggable={false}
+              className="max-h-full max-w-full select-none object-contain"
             />
           ) : (
             <PhotoPlaceholder aspect="h-full" />
@@ -97,9 +112,13 @@ export const PhotoSlider = ({
       onMouseEnter={() => setPaused(true)}
       onMouseLeave={() => setPaused(false)}
     >
-      {isFade ? (
-        <div className={`relative overflow-hidden rounded-sm bg-cream ${aspect}`}>
-          {images.map((item, index) => {
+      <div
+        className={`relative overflow-hidden rounded-sm bg-cream touch-pan-y ${aspect}`}
+        onTouchStart={handleTouchStart}
+        onTouchEnd={handleTouchEnd}
+      >
+        {isFade ? (
+          images.map((item, index) => {
             const photoId = typeof item === "string" ? item : item.id;
             const active = index === selected;
             return (
@@ -112,22 +131,48 @@ export const PhotoSlider = ({
                 {renderSlideContent(item, index)}
               </div>
             );
-          })}
-        </div>
-      ) : (
-        <div className={`relative overflow-hidden rounded-sm bg-cream ${aspect}`} ref={emblaRef}>
-          <div className="embla__container relative h-full w-full">
+          })
+        ) : (
+          <div
+            className="flex h-full w-full transition-transform duration-500 ease-out"
+            style={{ transform: `translate3d(-${selected * 100}%, 0, 0)` }}
+          >
             {images.map((item, index) => {
               const photoId = typeof item === "string" ? item : item.id;
               return (
-                <div key={photoId} className="embla__slide relative h-full w-full flex-[0_0_100%]">
+                <div key={photoId} className="relative h-full w-full shrink-0 basis-full">
                   {renderSlideContent(item, index)}
                 </div>
               );
             })}
           </div>
-        </div>
-      )}
+        )}
+
+        {count > 1 && (
+          <>
+            <Button
+              type="button"
+              variant="ghost"
+              size="icon"
+              aria-label="Previous photo"
+              onClick={goPrev}
+              className="absolute left-2 top-1/2 z-20 h-8 w-8 -translate-y-1/2 rounded-full bg-ink/35 text-ivory backdrop-blur-sm hover:bg-ink/55"
+            >
+              <ChevronLeft className="h-4 w-4" />
+            </Button>
+            <Button
+              type="button"
+              variant="ghost"
+              size="icon"
+              aria-label="Next photo"
+              onClick={goNext}
+              className="absolute right-2 top-1/2 z-20 h-8 w-8 -translate-y-1/2 rounded-full bg-ink/35 text-ivory backdrop-blur-sm hover:bg-ink/55"
+            >
+              <ChevronRight className="h-4 w-4" />
+            </Button>
+          </>
+        )}
+      </div>
 
       {showDots && (
         <div className="mt-3 flex justify-center gap-2">
@@ -138,10 +183,7 @@ export const PhotoSlider = ({
               variant="ghost"
               size="icon"
               aria-label={`Go to slide ${index + 1}`}
-              onClick={() => {
-                if (isFade) setSelected(index);
-                else emblaApi?.scrollTo(index);
-              }}
+              onClick={() => setSelected(index)}
               className={`h-2 min-h-2 p-0 transition-all duration-300 ${
                 index === selected ? "w-6 rounded-full bg-rose" : "w-2 rounded-full bg-rose/30"
               }`}
