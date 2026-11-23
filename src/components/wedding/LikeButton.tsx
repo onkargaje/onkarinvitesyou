@@ -7,6 +7,14 @@ import { getSessionId } from "@/lib/session";
 
 type Kind = "blessing" | "photo";
 
+const getPhotoBaseLikes = (itemId: string): number => {
+  let hash = 0;
+  for (let i = 0; i < itemId.length; i++) {
+    hash = (hash * 31 + itemId.charCodeAt(i)) >>> 0;
+  }
+  return 40 + (hash % 11);
+};
+
 interface LikeButtonProps {
   kind: Kind;
   itemId: string;
@@ -22,7 +30,8 @@ export const LikeButton = ({
   size = "sm",
   variant = "card",
 }: LikeButtonProps) => {
-  const [count, setCount] = useState(0);
+  const baseCount = kind === "photo" ? getPhotoBaseLikes(itemId) : 0;
+  const [count, setCount] = useState(baseCount);
   const [liked, setLiked] = useState(false);
   const [busy, setBusy] = useState(false);
   const [pulse, setPulse] = useState(0);
@@ -52,7 +61,7 @@ export const LikeButton = ({
         supabase.from("photo_likes").select("id").eq("photo_id", itemId).eq("session_id", sessionId).maybeSingle(),
       ]);
       if (cancelled) return;
-      const nextCount = total.count ?? 0;
+      const nextCount = baseCount + (total.count ?? 0);
       const isLiked = Boolean(own.data);
       setCount(nextCount);
       setLiked(isLiked);
@@ -62,13 +71,13 @@ export const LikeButton = ({
     return () => {
       cancelled = true;
     };
-  }, [itemId, kind, onChange, sessionId]);
+  }, [baseCount, itemId, kind, onChange, sessionId]);
 
   const toggle = async () => {
     if (busy || !sessionId) return;
     setBusy(true);
     const next = !liked;
-    const nextCount = Math.max(0, count + (next ? 1 : -1));
+    const nextCount = Math.max(baseCount, count + (next ? 1 : -1));
     setLiked(next);
     setCount(nextCount);
     setPulse((value) => value + 1);
@@ -94,8 +103,8 @@ export const LikeButton = ({
       const { error } = await supabase.from("photo_likes").insert({ photo_id: itemId, session_id: sessionId });
       if (error && error.code !== "23505") {
         setLiked(false);
-        setCount((value) => Math.max(0, value - 1));
-        onChange?.(itemId, Math.max(0, count), false);
+        setCount((value) => Math.max(baseCount, value - 1));
+        onChange?.(itemId, Math.max(baseCount, count), false);
       }
     } else {
       const { error } = await supabase.from("photo_likes").delete().eq("photo_id", itemId).eq("session_id", sessionId);
