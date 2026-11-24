@@ -4,15 +4,16 @@ import { Heart } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { getSessionId } from "@/lib/session";
+import { toast } from "sonner";
 
 type Kind = "blessing" | "photo";
 
-const getPhotoBaseLikes = (itemId: string): number => {
+const getPhotoBaseLikes = (photoId: string) => {
   let hash = 0;
-  for (let i = 0; i < itemId.length; i++) {
-    hash = (hash * 31 + itemId.charCodeAt(i)) >>> 0;
+  for (let index = 0; index < photoId.length; index += 1) {
+    hash = (hash * 31 + photoId.charCodeAt(index)) | 0;
   }
-  return 40 + (hash % 11);
+  return 40 + (Math.abs(hash) % 11);
 };
 
 interface LikeButtonProps {
@@ -43,29 +44,55 @@ export const LikeButton = ({
     if (!sessionId) return;
     let cancelled = false;
     const load = async () => {
-      if (kind === "blessing") {
-        const [total, own] = await Promise.all([
-          supabase.from("blessing_likes").select("id", { count: "exact", head: true }).eq("blessing_id", itemId),
-          supabase.from("blessing_likes").select("id").eq("blessing_id", itemId).eq("session_id", sessionId).maybeSingle(),
-        ]);
+      try {
+        let liveCount = 0;
+        let isLiked = false;
+
+        if (kind === "blessing") {
+          const [total, own] = await Promise.all([
+            supabase
+              .from("blessing_likes")
+              .select("id", { count: "exact", head: true })
+              .eq("blessing_id", itemId),
+            supabase
+              .from("blessing_likes")
+              .select("id")
+              .eq("blessing_id", itemId)
+              .eq("session_id", sessionId)
+              .maybeSingle(),
+          ]);
+          if (total.error || own.error) throw total.error ?? own.error;
+          liveCount = total.count ?? 0;
+          isLiked = Boolean(own.data);
+        } else {
+          const [total, own] = await Promise.all([
+            supabase
+              .from("photo_likes")
+              .select("id", { count: "exact", head: true })
+              .eq("photo_id", itemId),
+            supabase
+              .from("photo_likes")
+              .select("id")
+              .eq("photo_id", itemId)
+              .eq("session_id", sessionId)
+              .maybeSingle(),
+          ]);
+          if (total.error || own.error) throw total.error ?? own.error;
+          liveCount = total.count ?? 0;
+          isLiked = Boolean(own.data);
+        }
+
         if (cancelled) return;
-        const nextCount = total.count ?? 0;
-        const isLiked = Boolean(own.data);
+        const nextCount = baseCount + liveCount;
         setCount(nextCount);
         setLiked(isLiked);
         onChange?.(itemId, nextCount, isLiked);
-        return;
+      } catch {
+        if (cancelled) return;
+        setCount(baseCount);
+        setLiked(false);
+        onChange?.(itemId, baseCount, false);
       }
-      const [total, own] = await Promise.all([
-        supabase.from("photo_likes").select("id", { count: "exact", head: true }).eq("photo_id", itemId),
-        supabase.from("photo_likes").select("id").eq("photo_id", itemId).eq("session_id", sessionId).maybeSingle(),
-      ]);
-      if (cancelled) return;
-      const nextCount = baseCount + (total.count ?? 0);
-      const isLiked = Boolean(own.data);
-      setCount(nextCount);
-      setLiked(isLiked);
-      onChange?.(itemId, nextCount, isLiked);
     };
     void load();
     return () => {
@@ -76,45 +103,56 @@ export const LikeButton = ({
   const toggle = async () => {
     if (busy || !sessionId) return;
     setBusy(true);
-    const next = !liked;
-    const nextCount = Math.max(baseCount, count + (next ? 1 : -1));
+    const previousLiked = liked;
+    const previousCount = count;
+    const next = !previousLiked;
+    const nextCount = Math.max(0, previousCount + (next ? 1 : -1));
+    const table = kind === "blessing" ? "blessing_likes" : "photo_likes";
+    const itemColumn = kind === "blessing" ? "blessing_id" : "photo_id";
+
     setLiked(next);
     setCount(nextCount);
     setPulse((value) => value + 1);
     onChange?.(itemId, nextCount, next);
 
-    if (kind === "blessing") {
-      if (next) {
-        const { error } = await supabase.from("blessing_likes").insert({ blessing_id: itemId, session_id: sessionId });
-        if (error && error.code !== "23505") {
-          setLiked(false);
-          setCount((value) => Math.max(0, value - 1));
-          onChange?.(itemId, Math.max(0, count), false);
+    try {
+      if (kind === "blessing") {
+        if (next) {
+          const { error } = await supabase.from("blessing_likes").insert({
+            blessing_id: itemId,
+            session_id: sessionId,
+          });
+          if (error && error.code !== "23505") throw error;
+        } else {
+          const { error } = await supabase
+            .from("blessing_likes")
+            .delete()
+            .eq("blessing_id", itemId)
+            .eq("session_id", sessionId);
+          if (error) throw error;
         }
+      } else if (next) {
+        const { error } = await supabase.from("photo_likes").insert({
+          photo_id: itemId,
+          session_id: sessionId,
+        });
+        if (error && error.code !== "23505") throw error;
       } else {
-        const { error } = await supabase.from("blessing_likes").delete().eq("blessing_id", itemId).eq("session_id", sessionId);
-        if (error) {
-          setLiked(true);
-          setCount((value) => value + 1);
-          onChange?.(itemId, count, true);
-        }
+        const { error } = await supabase
+          .from("photo_likes")
+          .delete()
+          .eq("photo_id", itemId)
+          .eq("session_id", sessionId);
+        if (error) throw error;
       }
-    } else if (next) {
-      const { error } = await supabase.from("photo_likes").insert({ photo_id: itemId, session_id: sessionId });
-      if (error && error.code !== "23505") {
-        setLiked(false);
-        setCount((value) => Math.max(baseCount, value - 1));
-        onChange?.(itemId, Math.max(baseCount, count), false);
-      }
-    } else {
-      const { error } = await supabase.from("photo_likes").delete().eq("photo_id", itemId).eq("session_id", sessionId);
-      if (error) {
-        setLiked(true);
-        setCount((value) => value + 1);
-        onChange?.(itemId, count, true);
-      }
+    } catch {
+      setLiked(previousLiked);
+      setCount(previousCount);
+      onChange?.(itemId, previousCount, previousLiked);
+      toast.error("Your like couldn’t be saved. Please try again.");
+    } finally {
+      setBusy(false);
     }
-    setBusy(false);
   };
 
   const isOverlay = variant === "overlay";
@@ -131,9 +169,11 @@ export const LikeButton = ({
       aria-pressed={liked}
       aria-label={liked ? "Unlike" : "Like"}
       disabled={!sessionId || busy}
-      className={isOverlay
-        ? "h-auto rounded-full bg-ink/35 px-3 py-1.5 text-ivory backdrop-blur-md hover:bg-ink/50"
-        : "h-auto gap-1.5 px-1 py-1 text-rose hover:text-rose/80"}
+      className={
+        isOverlay
+          ? "h-auto rounded-full bg-ink/35 px-3 py-1.5 text-ivory backdrop-blur-md hover:bg-ink/50"
+          : "h-auto gap-1.5 px-1 py-1 text-rose hover:text-rose/80"
+      }
     >
       <span className="relative inline-flex">
         <AnimatePresence>
@@ -154,10 +194,15 @@ export const LikeButton = ({
           transition={{ duration: 0.35 }}
           className="relative"
         >
-          <Heart size={iconSize} className={liked ? "fill-rose text-rose" : isOverlay ? "text-ivory" : "text-rose/70"} />
+          <Heart
+            size={iconSize}
+            className={liked ? "fill-rose text-rose" : isOverlay ? "text-ivory" : "text-rose/70"}
+          />
         </motion.span>
       </span>
-      <span className={`text-xs font-medium tabular-nums ${isOverlay ? "text-ivory" : ""}`}>{count}</span>
+      <span className={`text-xs font-medium tabular-nums ${isOverlay ? "text-ivory" : ""}`}>
+        {count}
+      </span>
     </Button>
   );
 };

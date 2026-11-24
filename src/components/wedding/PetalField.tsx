@@ -26,7 +26,13 @@ const toneColors = {
 const PetalShape = ({ petal }: { petal: Petal }) => {
   const colors = toneColors[petal.tone];
   return (
-    <svg viewBox="0 0 32 32" width={petal.size} height={petal.size} aria-hidden="true" className={`petal-${petal.tone}`}>
+    <svg
+      viewBox="0 0 32 32"
+      width={petal.size}
+      height={petal.size}
+      aria-hidden="true"
+      className={`petal-${petal.tone}`}
+    >
       <defs>
         <linearGradient id={`petal-${petal.id}`} x1="0" x2="1" y1="0" y2="1">
           <stop offset="0%" stopColor={colors.top} />
@@ -34,29 +40,36 @@ const PetalShape = ({ petal }: { petal: Petal }) => {
           <stop offset="100%" stopColor={colors.bottom} />
         </linearGradient>
       </defs>
-      <path d="M16 2 C22 6 28 12 26 22 C24 28 18 30 16 30 C14 30 8 28 6 22 C4 12 10 6 16 2 Z" fill={`url(#petal-${petal.id})`} />
+      <path
+        d="M16 2 C22 6 28 12 26 22 C24 28 18 30 16 30 C14 30 8 28 6 22 C4 12 10 6 16 2 Z"
+        fill={`url(#petal-${petal.id})`}
+      />
     </svg>
   );
 };
 
 const Field = ({ count, layer }: { count: number; layer: "bg" | "fg" }) => {
   const isBg = layer === "bg";
-  const petals = useMemo<Petal[]>(() => Array.from({ length: count }, (_, i) => {
-    const seed = i + (isBg ? 100 : 0);
-    const tones = ["rose", "gold", "blush"] as const;
-    const duration = isBg ? 22 + sample(seed + 3) * 15 : 10 + sample(seed + 3) * 12;
-    return {
-      id: `${layer}-${i}`,
-      left: sample(seed + 1) * 100,
-      delay: -(sample(seed + 2) * duration),
-      duration,
-      size: isBg ? 26 + sample(seed + 4) * 30 : 10 + sample(seed + 4) * 18,
-      opacity: isBg ? 0.18 + sample(seed + 6) * 0.18 : 0.55 + sample(seed + 6) * 0.3,
-      drift: (sample(seed + 7) < 0.5 ? -1 : 1) * (40 + sample(seed + 8) * 140),
-      rotation: 360 + sample(seed + 9) * 540,
-      tone: tones[Math.floor(sample(seed + 10) * tones.length)] ?? "rose",
-    };
-  }), [count, isBg, layer]);
+  const petals = useMemo<Petal[]>(
+    () =>
+      Array.from({ length: count }, (_, i) => {
+        const seed = i + (isBg ? 100 : 0);
+        const tones = ["rose", "gold", "blush"] as const;
+        const duration = isBg ? 22 + sample(seed + 3) * 15 : 10 + sample(seed + 3) * 12;
+        return {
+          id: `${layer}-${i}`,
+          left: sample(seed + 1) * 100,
+          delay: -(sample(seed + 2) * duration),
+          duration,
+          size: isBg ? 26 + sample(seed + 4) * 30 : 10 + sample(seed + 4) * 18,
+          opacity: isBg ? 0.18 + sample(seed + 6) * 0.18 : 0.55 + sample(seed + 6) * 0.3,
+          drift: (sample(seed + 7) < 0.5 ? -1 : 1) * (40 + sample(seed + 8) * 140),
+          rotation: 360 + sample(seed + 9) * 540,
+          tone: tones[Math.floor(sample(seed + 10) * tones.length)] ?? "rose",
+        };
+      }),
+    [count, isBg, layer],
+  );
 
   if (count === 0) return null;
 
@@ -70,14 +83,16 @@ const Field = ({ count, layer }: { count: number; layer: "bg" | "fg" }) => {
         <div
           key={petal.id}
           className="petal-fall absolute top-0"
-          style={{
-            left: `${petal.left}%`,
-            animationDuration: `${petal.duration}s`,
-            animationDelay: `${petal.delay}s`,
-            opacity: petal.opacity,
-            "--drift": `${petal.drift}px`,
-            "--rotation": `${petal.rotation}deg`,
-          } as React.CSSProperties}
+          style={
+            {
+              left: `${petal.left.toFixed(4)}%`,
+              animationDuration: `${petal.duration.toFixed(4)}s`,
+              animationDelay: `${petal.delay.toFixed(4)}s`,
+              opacity: Number(petal.opacity.toFixed(6)),
+              "--drift": `${petal.drift.toFixed(4)}px`,
+              "--rotation": `${petal.rotation.toFixed(6)}deg`,
+            } as React.CSSProperties
+          }
         >
           <PetalShape petal={petal} />
         </div>

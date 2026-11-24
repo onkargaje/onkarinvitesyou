@@ -37,16 +37,16 @@ export const CinematicIntro = ({ onEnter }: { onEnter: () => void }) => {
             playsInline
             className="intro-video absolute inset-0 h-full w-full object-cover"
           />
-          <div className="intro-scrim absolute inset-0 bg-ink/45" />
+          <div className="intro-scrim absolute inset-0 bg-ink/65" />
           <div className="relative z-10 flex h-full w-full items-center justify-center px-6">
             <motion.div
               initial={{ opacity: 0, y: 30 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 1.4, delay: 0.4, ease: [0.22, 1, 0.36, 1] }}
-              className="rounded-3xl bg-ink/30 px-6 py-10 text-center backdrop-blur-sm sm:px-12 sm:py-12"
+              className="rounded-3xl bg-ink/50 px-6 py-10 text-center backdrop-blur-sm sm:px-12 sm:py-12"
             >
-              <p className="mb-3 font-script text-3xl text-ivory [text-shadow:0_2px_14px_rgba(20,10,12,0.9)] md:text-5xl">
-                A Wedding Invitation
+              <p className="mx-auto mb-6 max-w-2xl font-sans text-xs font-semibold uppercase leading-relaxed tracking-[0.16em] text-ivory [text-shadow:0_2px_14px_rgba(20,10,12,0.95)] sm:text-sm md:text-base">
+                WE&apos;RE EXCITED TO ANNOUNCE OUR WEDDING. JOIN US FOR THE CELEBRATION
               </p>
               <h1 className="mb-8 font-serif text-4xl font-semibold text-ivory [text-shadow:0_3px_18px_rgba(20,10,12,0.95)] sm:text-5xl md:text-7xl">
                 {wedding.openingLine}

@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { createFileRoute } from "@tanstack/react-router";
 import { Blessings } from "@/components/wedding/Blessings";
 import { CinematicIntro } from "@/components/wedding/CinematicIntro";
@@ -60,26 +60,20 @@ const littleLaughterImages = [
   { id: "laughter-5", src: littleLaughter5, alt: "A Little Laughter — 5" },
 ];
 
-const allPreloadImages = [
-  ourBeginningImg,
-  ...happilyEngagedImages.map((img) => img.src),
-  ...twoSoulsImages.map((img) => img.src),
-  ...littleLaughterImages.map((img) => img.src),
-  foreverBeginsHereImg,
-];
-
 export const Route = createFileRoute("/")({
   head: () => ({
     meta: [
       { title: "Onkar & Shruti — A Wedding Invitation" },
       {
         name: "description",
-        content: "Join Onkar Jalewar and Shruti Shriramwar in Parbhani for their wedding celebrations.",
+        content:
+          "Join Onkar Jalewar and Shruti Shriramwar in Parbhani for their wedding celebrations.",
       },
       { property: "og:title", content: "Onkar & Shruti — A Wedding Invitation" },
       {
         property: "og:description",
-        content: "Join Onkar Jalewar and Shruti Shriramwar in Parbhani for their wedding celebrations.",
+        content:
+          "Join Onkar Jalewar and Shruti Shriramwar in Parbhani for their wedding celebrations.",
       },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
@@ -99,18 +93,6 @@ export const Route = createFileRoute("/")({
 function Index() {
   const [introDone, setIntroDone] = useState(false);
 
-  useEffect(() => {
-    const preloaded = allPreloadImages.map((src) => {
-      const img = new Image();
-      img.src = src;
-      img.decode?.().catch(() => {});
-      return img;
-    });
-    return () => {
-      preloaded.length = 0;
-    };
-  }, []);
-
   return (
     <main className="relative overflow-x-hidden">
       <CinematicIntro onEnter={() => setIntroDone(true)} />
@@ -119,7 +101,11 @@ function Index() {
 
       <div className="relative z-10">
         <Hero />
-        <PhotoBlock title={gallerySections[0].title} photoId="our-beginning-1" image={ourBeginningImg} />
+        <PhotoBlock
+          title={gallerySections[0].title}
+          photoId="our-beginning-1"
+          image={ourBeginningImg}
+        />
         <Countdown />
         <PhotoSlider
           variant="center"
