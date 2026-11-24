@@ -126,11 +126,19 @@ export const PhotoSlider = ({
       style={{ transform: `rotate(${rotate}deg)` }}
       onMouseEnter={() => setPaused(true)}
       onMouseLeave={() => setPaused(false)}
+      onFocusCapture={() => setPaused(true)}
+      onBlurCapture={(event) => {
+        if (!event.currentTarget.contains(event.relatedTarget as Node | null)) setPaused(false);
+      }}
     >
       <div
         className={`relative overflow-hidden rounded-sm bg-cream touch-pan-y ${aspect}`}
         onTouchStart={handleTouchStart}
         onTouchEnd={handleTouchEnd}
+        onTouchCancel={() => {
+          touchStartX.current = null;
+          setPaused(false);
+        }}
       >
         {isFade ? (
           images.map((item, index) => {

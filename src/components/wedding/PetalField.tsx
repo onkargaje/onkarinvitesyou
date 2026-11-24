@@ -25,11 +25,12 @@ const toneColors = {
 
 const PetalShape = ({ petal }: { petal: Petal }) => {
   const colors = toneColors[petal.tone];
+  const size = Number(petal.size.toFixed(3));
   return (
     <svg
       viewBox="0 0 32 32"
-      width={petal.size}
-      height={petal.size}
+      width={size}
+      height={size}
       aria-hidden="true"
       className={`petal-${petal.tone}`}
     >

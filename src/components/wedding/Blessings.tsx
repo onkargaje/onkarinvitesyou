@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState, type FormEvent } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, type FormEvent } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { z } from "zod";
 import { Crown, Pencil, Send, Sparkles, X } from "lucide-react";
@@ -31,6 +31,7 @@ export const Blessings = () => {
   const [message, setMessage] = useState("");
   const [success, setSuccess] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
+  const submittingRef = useRef(false);
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [sessionId, setSessionId] = useState<string | null>(null);
@@ -60,6 +61,8 @@ export const Blessings = () => {
         if (cancelled) return;
         const blessings = data ?? [];
         setList(blessings);
+        const initialCounts = Object.fromEntries(blessings.map((blessing) => [blessing.id, 0]));
+        setLikeCounts(initialCounts);
 
         if (blessings.length > 0) {
           const { data: likes, error: likesError } = await supabase
@@ -76,7 +79,7 @@ export const Blessings = () => {
             const counts = (likes ?? []).reduce<Record<string, number>>((result, like) => {
               result[like.blessing_id] = (result[like.blessing_id] ?? 0) + 1;
               return result;
-            }, {});
+            }, initialCounts);
             setLikeCounts(counts);
           }
         }
@@ -113,7 +116,8 @@ export const Blessings = () => {
 
   const doSubmit = async () => {
     const parsed = schema.safeParse({ name, message });
-    if (!parsed.success || !sessionId || submitting) return;
+    if (!parsed.success || !sessionId || submitting || submittingRef.current) return;
+    submittingRef.current = true;
     setSubmitting(true);
 
     try {
@@ -154,6 +158,7 @@ export const Blessings = () => {
     } catch {
       toast.error("Could not save your blessing. Please try again.");
     } finally {
+      submittingRef.current = false;
       setSubmitting(false);
     }
   };

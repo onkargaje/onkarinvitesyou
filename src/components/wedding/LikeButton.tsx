@@ -35,6 +35,7 @@ export const LikeButton = ({
   const [count, setCount] = useState(baseCount);
   const [liked, setLiked] = useState(false);
   const [busy, setBusy] = useState(false);
+  const [loading, setLoading] = useState(true);
   const [pulse, setPulse] = useState(0);
   const [sessionId, setSessionId] = useState<string | null>(null);
 
@@ -43,6 +44,7 @@ export const LikeButton = ({
   useEffect(() => {
     if (!sessionId) return;
     let cancelled = false;
+    setLoading(true);
     const load = async () => {
       try {
         let liveCount = 0;
@@ -92,6 +94,9 @@ export const LikeButton = ({
         setCount(baseCount);
         setLiked(false);
         onChange?.(itemId, baseCount, false);
+        toast.error("Like counts are unavailable right now.");
+      } finally {
+        if (!cancelled) setLoading(false);
       }
     };
     void load();
@@ -107,22 +112,20 @@ export const LikeButton = ({
     const previousCount = count;
     const next = !previousLiked;
     const nextCount = Math.max(0, previousCount + (next ? 1 : -1));
-    const table = kind === "blessing" ? "blessing_likes" : "photo_likes";
-    const itemColumn = kind === "blessing" ? "blessing_id" : "photo_id";
-
     setLiked(next);
     setCount(nextCount);
     setPulse((value) => value + 1);
     onChange?.(itemId, nextCount, next);
 
+    let persisted = false;
     try {
       if (kind === "blessing") {
         if (next) {
-          const { error } = await supabase.from("blessing_likes").insert({
-            blessing_id: itemId,
-            session_id: sessionId,
-          });
-          if (error && error.code !== "23505") throw error;
+          const { error } = await supabase.from("blessing_likes").upsert(
+            { blessing_id: itemId, session_id: sessionId },
+            { onConflict: "blessing_id,session_id", ignoreDuplicates: true },
+          );
+          if (error) throw error;
         } else {
           const { error } = await supabase
             .from("blessing_likes")
@@ -131,25 +134,51 @@ export const LikeButton = ({
             .eq("session_id", sessionId);
           if (error) throw error;
         }
-      } else if (next) {
-        const { error } = await supabase.from("photo_likes").insert({
-          photo_id: itemId,
-          session_id: sessionId,
-        });
-        if (error && error.code !== "23505") throw error;
-      } else {
-        const { error } = await supabase
-          .from("photo_likes")
-          .delete()
-          .eq("photo_id", itemId)
-          .eq("session_id", sessionId);
+        persisted = true;
+        const { count: liveCount, error } = await supabase
+          .from("blessing_likes")
+          .select("id", { count: "exact", head: true })
+          .eq("blessing_id", itemId);
         if (error) throw error;
+        const exactCount = liveCount ?? 0;
+        setCount(exactCount);
+        onChange?.(itemId, exactCount, next);
+      } else {
+        if (next) {
+          const { error } = await supabase.from("photo_likes").upsert(
+            { photo_id: itemId, session_id: sessionId },
+            { onConflict: "photo_id,session_id", ignoreDuplicates: true },
+          );
+          if (error) throw error;
+        } else {
+          const { error } = await supabase
+            .from("photo_likes")
+            .delete()
+            .eq("photo_id", itemId)
+            .eq("session_id", sessionId);
+          if (error) throw error;
+        }
+        persisted = true;
+        const { count: liveCount, error } = await supabase
+          .from("photo_likes")
+          .select("id", { count: "exact", head: true })
+          .eq("photo_id", itemId);
+        if (error) throw error;
+        const exactCount = baseCount + (liveCount ?? 0);
+        setCount(exactCount);
+        onChange?.(itemId, exactCount, next);
       }
     } catch {
-      setLiked(previousLiked);
-      setCount(previousCount);
-      onChange?.(itemId, previousCount, previousLiked);
-      toast.error("Your like couldn’t be saved. Please try again.");
+      if (!persisted) {
+        setLiked(previousLiked);
+        setCount(previousCount);
+        onChange?.(itemId, previousCount, previousLiked);
+      }
+      toast.error(
+        persisted
+          ? "Your like was saved, but its count could not be refreshed."
+          : "Your like couldn’t be saved. Please try again.",
+      );
     } finally {
       setBusy(false);
     }
@@ -167,8 +196,9 @@ export const LikeButton = ({
         void toggle();
       }}
       aria-pressed={liked}
-      aria-label={liked ? "Unlike" : "Like"}
-      disabled={!sessionId || busy}
+      aria-label={loading ? "Loading likes" : liked ? "Unlike" : "Like"}
+      aria-busy={loading || busy}
+      disabled={!sessionId || loading || busy}
       className={
         isOverlay
           ? "h-auto rounded-full bg-ink/35 px-3 py-1.5 text-ivory backdrop-blur-md hover:bg-ink/50"
