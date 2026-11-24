@@ -37,7 +37,9 @@ export const PhotoSlider = ({
   const isFade = effect === "fade";
   const [selected, setSelected] = useState(0);
   const [paused, setPaused] = useState(false);
+  const [isVisible, setIsVisible] = useState(false);
   const touchStartX = useRef<number | null>(null);
+  const frameRef = useRef<HTMLDivElement>(null);
   const count = images.length;
 
   const goNext = useCallback(() => {
@@ -51,10 +53,21 @@ export const PhotoSlider = ({
   }, [count]);
 
   useEffect(() => {
-    if (paused || count <= 1) return;
+    const frame = frameRef.current;
+    if (!frame) return;
+    const observer = new IntersectionObserver(
+      ([entry]) => setIsVisible(Boolean(entry?.isIntersecting)),
+      { threshold: 0.2 },
+    );
+    observer.observe(frame);
+    return () => observer.disconnect();
+  }, []);
+
+  useEffect(() => {
+    if (paused || !isVisible || count <= 1) return;
     const id = window.setInterval(goNext, interval);
     return () => window.clearInterval(id);
-  }, [count, goNext, interval, paused]);
+  }, [count, goNext, interval, isVisible, paused]);
 
   const handleTouchStart = (e: React.TouchEvent) => {
     touchStartX.current = e.touches[0]?.clientX ?? null;
@@ -65,13 +78,14 @@ export const PhotoSlider = ({
     const startX = touchStartX.current;
     const endX = e.changedTouches[0]?.clientX;
     touchStartX.current = null;
-    setPaused(false);
-    if (startX == null || endX == null) return;
-    const delta = startX - endX;
-    if (Math.abs(delta) > 35) {
-      if (delta > 0) goNext();
-      else goPrev();
+    if (startX != null && endX != null) {
+      const delta = startX - endX;
+      if (Math.abs(delta) > 35) {
+        if (delta > 0) goNext();
+        else goPrev();
+      }
     }
+    setPaused(false);
   };
 
   const renderSlideContent = (item: SliderImage, index: number) => {
@@ -89,7 +103,7 @@ export const PhotoSlider = ({
             <img
               src={src}
               alt={alt || `${title} — ${index + 1}`}
-              loading="eager"
+              loading={index === selected ? "eager" : "lazy"}
               decoding="async"
               draggable={false}
               className="max-h-full max-w-full select-none object-contain"
@@ -107,15 +121,24 @@ export const PhotoSlider = ({
 
   const frame = (
     <div
+      ref={frameRef}
       className="polaroid mx-auto max-w-lg md:max-w-xl"
       style={{ transform: `rotate(${rotate}deg)` }}
       onMouseEnter={() => setPaused(true)}
       onMouseLeave={() => setPaused(false)}
+      onFocusCapture={() => setPaused(true)}
+      onBlurCapture={(event) => {
+        if (!event.currentTarget.contains(event.relatedTarget as Node | null)) setPaused(false);
+      }}
     >
       <div
         className={`relative overflow-hidden rounded-sm bg-cream touch-pan-y ${aspect}`}
         onTouchStart={handleTouchStart}
         onTouchEnd={handleTouchEnd}
+        onTouchCancel={() => {
+          touchStartX.current = null;
+          setPaused(false);
+        }}
       >
         {isFade ? (
           images.map((item, index) => {
@@ -222,7 +245,11 @@ export const PhotoSlider = ({
         <Reveal delay={0.1}>
           <div className="mt-8 text-center">
             <h3 className="font-serif text-2xl text-foreground md:text-4xl">{title}</h3>
-            {text && <p className="mx-auto mt-3 max-w-xl text-sm leading-relaxed text-muted-foreground">{text}</p>}
+            {text && (
+              <p className="mx-auto mt-3 max-w-xl text-sm leading-relaxed text-muted-foreground">
+                {text}
+              </p>
+            )}
           </div>
         </Reveal>
       </div>

@@ -239,14 +239,6 @@
   background: linear-gradient(to bottom, color-mix(in oklch, var(--ink) 50%, transparent), color-mix(in oklch, var(--ink) 12%, transparent) 42%, color-mix(in oklch, var(--ink) 40%, transparent));
 }
 
-.intro-video {
-  filter: blur(2px) saturate(1.1) sepia(0.15);
-}
-
-.intro-scrim {
-  background: linear-gradient(to bottom, color-mix(in oklch, var(--ink) 32%, transparent), transparent, color-mix(in oklch, var(--ink) 54%, transparent));
-}
-
 .scrollbar-hide {
   scrollbar-width: none;
 }

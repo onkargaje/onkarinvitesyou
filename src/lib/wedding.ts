@@ -1,13 +1,14 @@
 export const wedding = {
   groom: "Onkar Jalewar",
   bride: "Shruti Shriramwar",
-  openingLine: "Onkar & Shruti invite you",
+  openingLine: "Onkar & Shruti invites you",
   tagline: "We are getting married",
   date: "2026-11-26T12:14:00+05:30",
   dateLabel: "Thursday, 26 November 2026",
   muhurat: "12:14 PM",
   venueShort: "Renuka Mangal Karyalay, Parbhani",
-  venueFull: "Renuka Mangal Karyalay, Pathri Road, Renuka Nagar, Parbhani, Maharashtra 431401, India.",
+  venueFull:
+    "Renuka Mangal Karyalay, Pathri Road, Renuka Nagar, Parbhani, Maharashtra 431401, India.",
   mapLink: "https://maps.app.goo.gl/1gnWUgE7weeMAZMh9",
   mapEmbed:
     "https://www.google.com/maps?q=Renuka+Mangal+Karyalay,+Pathri+Road,+Renuka+Nagar,+Parbhani,+Maharashtra+431401,+India&output=embed",
