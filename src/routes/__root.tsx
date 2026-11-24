@@ -10,6 +10,7 @@ import {
 } from "@tanstack/react-router";
 import { useEffect, type ReactNode } from "react";
 import { Toaster } from "@/components/ui/sonner";
+import { Analytics } from "@vercel/analytics/react";
 
 import appCss from "../styles.css?url";
 import { reportLovableError } from "../lib/lovable-error-reporting";
@@ -83,10 +84,16 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
       { title: "Onkar & Shruti — A Wedding Invitation" },
-      { name: "description", content: "Celebrate the wedding of Onkar Jalewar and Shruti Shriramwar." },
+      {
+        name: "description",
+        content: "Celebrate the wedding of Onkar Jalewar and Shruti Shriramwar.",
+      },
       { name: "author", content: "Onkar & Shruti" },
       { property: "og:title", content: "Onkar & Shruti — A Wedding Invitation" },
-      { property: "og:description", content: "Celebrate the wedding of Onkar Jalewar and Shruti Shriramwar." },
+      {
+        property: "og:description",
+        content: "Celebrate the wedding of Onkar Jalewar and Shruti Shriramwar.",
+      },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
       { name: "twitter:site", content: "@Lovable" },
@@ -127,6 +134,7 @@ function RootComponent() {
       <Toaster />
       {/* Required: nested routes render here. Removing <Outlet /> breaks all child routes. */}
       <Outlet />
+      <Analytics />
     </QueryClientProvider>
   );
 }
